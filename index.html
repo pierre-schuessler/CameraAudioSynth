@@ -720,7 +720,6 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
         isRunning = true;
-        updateUIforSettings();
         video.onloadedmetadata = () => { video.play(); processFrameAndSend(); };
       } catch (error) {
         console.error('Error starting:', error);
