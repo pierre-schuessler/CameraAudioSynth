@@ -346,8 +346,7 @@
 
       <!-- Start / Stop -->
       <div class="control-block">
-        <button id="start" class="btn btn-primary">▶ Start</button>
-        <button id="stop" class="btn btn-secondary">■ Stop</button>
+        <button id="start-stop" class="btn btn-primary">▶ Start</button>
       </div>
 
       <!-- Volume -->
@@ -711,7 +710,18 @@
       animationId = requestAnimationFrame(processFrameAndSend);
     }
 
-    async function start() {
+    
+
+    async function start_stop(){
+      if (isRunning){
+        isRunning = false;
+        if (audioContext) { audioContext.close(); audioContext = null; }
+        if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+        cancelAnimationFrame(animationId);
+        document.getElementById("start-stop").innerHTML = "▶ Start";
+        return;
+      }
+
       try {
         clampFreqInputs();
         await setupAudio();
@@ -724,18 +734,12 @@
         console.error('Error starting:', error);
         alert('Error starting: ' + error.message);
       }
-    }
-
-    function stop() {
-      isRunning = false;
-      if (audioContext) { audioContext.close(); audioContext = null; }
-      if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-      cancelAnimationFrame(animationId);
+      document.getElementById('start-stop').innerHTML = "■ Stop"
     }
 
     precomputeHilbertCurve(size);
-    document.getElementById('start').onclick = start;
-    document.getElementById('stop').onclick = stop;
+    document.getElementById('start-stop').onclick = start_stop();
+    
   </script>
 </body>
 </html>
