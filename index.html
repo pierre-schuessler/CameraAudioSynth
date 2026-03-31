@@ -102,6 +102,7 @@
       flex-direction: row;
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
     .control-block {
@@ -225,6 +226,30 @@
       color: var(--text);
     }
 
+    /* Number input */
+    .num-input {
+      height: 22px;
+      width: 70px;
+      padding: 0 6px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: #3c3c3c;
+      color: var(--yellow);
+      font-family: var(--font);
+      font-size: 12px;
+      outline: none;
+      text-align: right;
+      -moz-appearance: textfield;
+    }
+    .num-input::-webkit-inner-spin-button,
+    .num-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .num-input:focus {
+      border-color: var(--accent);
+    }
+
     /* ── Content area ─────────────────────── */
     .content-area {
       flex: 1;
@@ -287,41 +312,6 @@
       border-radius: 2px;
     }
 
-    /* ── Status bar ───────────────────────── */
-    .statusbar {
-      height: 22px;
-      min-height: 22px;
-      flex-shrink: 0;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      padding: 0 10px;
-      gap: 14px;
-    }
-    .status-item {
-      font-size: 11px;
-      font-family: -apple-system, "Segoe UI", sans-serif;
-      color: rgba(255,255,255,0.85);
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .status-item span {
-      color: #fff;
-      font-weight: 600;
-    }
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.5);
-      flex-shrink: 0;
-    }
-    .status-dot.active {
-      background: #4ec9b0;
-    }
-
     /* hidden elements */
     video, #canvas {
       display: none;
@@ -335,7 +325,6 @@
     @media (max-width: 700px) {
       .content-area { flex-direction: column; }
       .video-panel { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
-      .controls-row { flex-wrap: wrap; }
       .control-block { border-right: none; border-bottom: 1px solid var(--border); width: 100%; }
     }
   </style>
@@ -354,15 +343,21 @@
       <span class="panel-title">Controls</span>
     </div>
     <div class="controls-row">
+
+      <!-- Start / Stop -->
       <div class="control-block">
         <button id="start" class="btn btn-primary">▶ Start</button>
         <button id="stop" class="btn btn-secondary">■ Stop</button>
       </div>
+
+      <!-- Volume -->
       <div class="control-block">
         <label class="control-label">Volume</label>
         <input type="range" id="volumeControl" class="slider" min="0" max="1" step="0.01" value="0.005">
         <span id="volumeValue" class="value-display">0.005</span>
       </div>
+
+      <!-- Grid Size -->
       <div class="control-block">
         <label class="control-label">Grid Size</label>
         <select id="sizeSelect" class="select">
@@ -373,6 +368,27 @@
         </select>
         <span id="pixelCount" class="value-display">64 px</span>
       </div>
+
+      <!-- Freq Range -->
+      <div class="control-block">
+        <label class="control-label">Freq Range</label>
+        <input type="number" id="minFreqInput" class="num-input" min="20" max="19999" step="1" value="50" title="Min Hz">
+        <span class="control-label" style="font-size:10px; letter-spacing:0;">Hz –</span>
+        <input type="number" id="maxFreqInput" class="num-input" min="21" max="20000" step="1" value="5000" title="Max Hz">
+        <span class="control-label" style="font-size:10px; letter-spacing:0;">Hz</span>
+      </div>
+
+      <!-- Freq Distribution -->
+      <div class="control-block">
+        <label class="control-label">Distribution</label>
+        <select id="distributionSelect" class="select">
+          <option value="logarithmic" selected>Logarithmic</option>
+          <option value="linear">Linear</option>
+          <option value="exponential">Exponential</option>
+          <option value="harmonic">Harmonic</option>
+        </select>
+      </div>
+
     </div>
 
     <!-- Main content -->
@@ -400,16 +416,17 @@
 
     </div>
 
-    <!-- Status bar -->
+    <!-- Status bar 
     <div class="statusbar">
       <div class="status-item">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">Stopped</span>
       </div>
-      <div class="status-item" id="status-item-freq-range">Freq: <span>Error</span></div>
+      <div class="status-item" id="status-item-freq-range">Freq: <span>—</span></div>
       <div class="status-item" id="status-item-freq-distribution">Mode: <span>Logarithmic</span></div>
       <div class="status-item">Curve: <span>Hilbert</span></div>
     </div>
+    -->
 
   </div>
 
@@ -432,18 +449,11 @@
     let animationId;
     let volumeMultiplier = 0.005;
     let frequencyDistribution = 'logarithmic';
-    const minFreq = 50;
-    const maxFreq = 5000;
+    let minFreq = 50;
+    let maxFreq = 5000;
     let currentFrequencies = [];
     let isRunning = false;
     let hilbertCoords = [];
-
-    function updateUIforSettings(){
-      document.getElementById("status-item-freq-range").innerHTML =  `Freq: <span>${minFreq}-${maxFreq} Hz</span>`;
-
-      document.getElementById("status-item-freq-distribution").innerHTML =  `Mode: <span>${{"logarithmic": "Logarithmic"}[frequencyDistribution]}</span>`;
-    }
-    updateUIforSettings();
 
     function hilbert(n, index) {
       let x = 0, y = 0;
@@ -474,23 +484,49 @@
     }
 
     function generateFrequencies(distribution, numOsc) {
-      
       const frequencies = new Array(numOsc);
-      switch(distribution) {
+      switch (distribution) {
         case 'linear':
           for (let i = 0; i < numOsc; i++)
             frequencies[i] = minFreq + (i / (numOsc - 1)) * (maxFreq - minFreq);
           break;
+        case 'exponential': {
+          // steeper curve than log — square the normalised position
+          for (let i = 0; i < numOsc; i++) {
+            const t = Math.pow(i / (numOsc - 1), 2);
+            frequencies[i] = minFreq + t * (maxFreq - minFreq);
+          }
+          break;
+        }
+        case 'harmonic': {
+          // integer multiples of the min frequency, clamped to maxFreq
+          const fundamental = minFreq;
+          for (let i = 0; i < numOsc; i++) {
+            const harmonic = fundamental * (i + 1);
+            frequencies[i] = Math.min(harmonic, maxFreq);
+          }
+          break;
+        }
         case 'logarithmic':
-        default:
+        default: {
           const logMin = Math.log(minFreq), logMax = Math.log(maxFreq);
           for (let i = 0; i < numOsc; i++) {
             const logValue = logMin + (i / (numOsc - 1)) * (logMax - logMin);
             frequencies[i] = Math.exp(logValue);
           }
           break;
+        }
       }
       return frequencies;
+    }
+
+    function applyFrequencyChange() {
+      updateUIforSettings();
+      if (workletNode && isRunning) {
+        const frequencies = generateFrequencies(frequencyDistribution, numOscillators);
+        currentFrequencies = frequencies;
+        workletNode.port.postMessage({ type: 'updateConfig', numOscillators, frequencies });
+      }
     }
 
     function updateSize(newSize) {
@@ -502,18 +538,46 @@
       precomputeHilbertCurve(size);
       document.getElementById('pixelCount').textContent = numPixels + ' px';
       document.getElementById('videoTitle').textContent = `OUTPUT — ${size}×${size}`;
-      if (workletNode && isRunning) {
-        const frequencies = generateFrequencies(frequencyDistribution, numOscillators);
-        currentFrequencies = frequencies;
-        workletNode.port.postMessage({ type: 'updateConfig', numOscillators, frequencies });
-      }
+      applyFrequencyChange();
     }
 
-    document.getElementById('volumeControl').oninput = function() {
+    // Volume
+    document.getElementById('volumeControl').oninput = function () {
       volumeMultiplier = parseFloat(this.value);
       document.getElementById('volumeValue').textContent = this.value;
     };
-    document.getElementById('sizeSelect').onchange = function() { updateSize(this.value); };
+
+    // Grid size
+    document.getElementById('sizeSelect').onchange = function () { updateSize(this.value); };
+
+    // Freq range inputs
+    function clampFreqInputs() {
+      const minInput = document.getElementById('minFreqInput');
+      const maxInput = document.getElementById('maxFreqInput');
+      let newMin = parseInt(minInput.value) || 20;
+      let newMax = parseInt(maxInput.value) || 20000;
+      newMin = Math.max(20, Math.min(newMin, 19999));
+      newMax = Math.max(newMin + 1, Math.min(newMax, 20000));
+      minInput.value = newMin;
+      maxInput.value = newMax;
+      minFreq = newMin;
+      maxFreq = newMax;
+    }
+
+    document.getElementById('minFreqInput').onchange = function () {
+      clampFreqInputs();
+      applyFrequencyChange();
+    };
+    document.getElementById('maxFreqInput').onchange = function () {
+      clampFreqInputs();
+      applyFrequencyChange();
+    };
+
+    // Distribution
+    document.getElementById('distributionSelect').onchange = function () {
+      frequencyDistribution = this.value;
+      applyFrequencyChange();
+    };
 
     async function setupAudio() {
       audioContext = new AudioContext();
@@ -610,7 +674,6 @@
 
         waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
 
-        // grid lines
         waveformCtx.strokeStyle = '#2a2a2a';
         waveformCtx.lineWidth = 1;
         waveformCtx.beginPath();
@@ -664,6 +727,7 @@
 
     async function start() {
       try {
+        clampFreqInputs();
         await setupAudio();
         setupWaveformVisualizer();
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -671,6 +735,7 @@
         isRunning = true;
         document.getElementById('statusDot').classList.add('active');
         document.getElementById('statusText').textContent = 'Running';
+        updateUIforSettings();
         video.onloadedmetadata = () => { video.play(); processFrameAndSend(); };
       } catch (error) {
         console.error('Error starting:', error);
