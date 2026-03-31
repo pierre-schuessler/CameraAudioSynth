@@ -83,16 +83,6 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.7px;
-      color: var(--text);
-      border-bottom: 1px solid var(--accent);
-      padding-bottom: 1px;
-    }
-    .panel-title-muted {
-      font-size: 11px;
-      font-family: -apple-system, "Segoe UI", sans-serif;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
       color: var(--text-muted);
     }
 
@@ -333,15 +323,12 @@
 
   <!-- Titlebar -->
   <div class="titlebar">
-    <span>camera-audio-synth.js — Camera Audio Synth</span>
+    <span>Camera Audio Synthesizer</span>
   </div>
 
   <div class="workspace">
 
     <!-- Controls toolbar -->
-    <div class="panel-header">
-      <span class="panel-title">Controls</span>
-    </div>
     <div class="controls-row">
 
       <!-- Start / Stop -->
@@ -396,7 +383,7 @@
       <!-- Video feed panel -->
       <div class="video-panel">
         <div class="panel-header">
-          <span class="panel-title-muted" id="videoTitle">OUTPUT — 8×8</span>
+          <span class="panel-title" id="videoTitle">OUTPUT — 8×8</span>
         </div>
         <div class="video-inner">
           <canvas id="grayscaleCanvas" width="320" height="320"></canvas>
@@ -406,7 +393,7 @@
       <!-- Waveform panel -->
       <div class="waveform-panel">
         <div class="panel-header">
-          <span class="panel-title-muted">WAVEFORM</span>
+          <span class="panel-title">WAVEFORM</span>
         </div>
         <div class="waveform-inner">
           <canvas id="waveformCanvas" width="800" height="160"></canvas>
