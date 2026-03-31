@@ -4,332 +4,418 @@
   <meta charset="UTF-8" />
   <title>Camera Audio Synth</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-    
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
-      color: #e8e8f0;
-      min-height: 100vh;
-      padding: 2rem;
+
+    :root {
+      --bg: #1e1e1e;
+      --border: #3d3d3d;
+      --text: #d4d4d4;
+      --text-muted: #858585;
+      --text-ln: #5a5a5a;
+      --accent: #007acc;
+      --green: #4ec9b0;
+      --red: #f48771;
+      --yellow: #dcdcaa;
+      --scrollbar: #424242;
+      --font: "Consolas", "JetBrains Mono", "Courier New", monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
       overflow-x: hidden;
     }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 3rem;
-      background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
-    }
-    
-    .main-controls {
+
+    body {
       display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin-bottom: 3rem;
+      flex-direction: column;
+      min-height: 100vh;
     }
-    
-    .btn {
-      padding: 0.75rem 2rem;
-      border: none;
-      border-radius: 12px;
-      font-family: inherit;
-      font-weight: 500;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-      color: white;
-      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
-    }
-    
-    .btn-secondary {
-      background: rgba(139, 92, 246, 0.1);
-      color: #c084fc;
-      border: 1px solid rgba(139, 92, 246, 0.3);
-    }
-    
-    .btn-secondary:hover {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.5);
-      transform: translateY(-2px);
-    }
-    
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      margin-bottom: 3rem;
-    }
-    
-    .control-group {
-      background: rgba(139, 92, 246, 0.05);
-      border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 16px;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-    }
-    
-    .control-label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 0.75rem;
-      color: #c084fc;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    
-    .slider-container {
+
+    /* ── Titlebar ─────────────────────────── */
+    .titlebar {
+      height: 30px;
+      min-height: 30px;
+      flex-shrink: 0;
+      background: #2d2d2d;
       display: flex;
       align-items: center;
-      gap: 1rem;
+      justify-content: center;
+      border-bottom: 1px solid #1a1a1a;
     }
-    
-    .slider {
+    .titlebar span {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Main layout ──────────────────────── */
+    .workspace {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Panel header (reusable) ──────────── */
+    .panel-header {
+      height: 28px;
+      min-height: 28px;
+      flex-shrink: 0;
+      background: #252526;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text);
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: 1px;
+    }
+    .panel-title-muted {
+      font-size: 11px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+    }
+
+    /* ── Controls row ─────────────────────── */
+    .controls-row {
+      display: flex;
+      flex-direction: row;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .control-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 16px;
+      border-right: 1px solid var(--border);
+    }
+    .control-block:last-child {
+      border-right: none;
+    }
+
+    .control-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    /* Buttons */
+    .btn {
+      height: 22px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover {
+      background: #1a8ad4;
+      border-color: #1a8ad4;
+    }
+    .btn-secondary {
+      background: #3c3c3c;
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover {
+      background: #4a4a4a;
+      color: var(--text);
+    }
+
+    /* Sliders */
+    .slider {
       -webkit-appearance: none;
       appearance: none;
-      height: 6px;
-      background: rgba(139, 92, 246, 0.2);
-      border-radius: 3px;
+      height: 4px;
+      background: #3c3c3c;
+      border-radius: 2px;
       outline: none;
-      position: relative;
+      width: 120px;
+      border: 1px solid var(--border);
     }
-    
     .slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-      cursor: pointer;
-      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
-      transition: all 0.2s ease;
-    }
-    
-    .slider::-webkit-slider-thumb:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
-    }
-    
-    .slider::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--accent);
       cursor: pointer;
       border: none;
-      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
     }
-    
+    .slider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Value badge */
     .value-display {
-      min-width: 60px;
+      min-width: 52px;
       text-align: right;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9rem;
-      color: #8b5cf6;
-      background: rgba(139, 92, 246, 0.1);
-      padding: 0.25rem 0.5rem;
-      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 12px;
+      color: var(--yellow);
+      background: #2a2a2a;
+      padding: 1px 5px;
+      border-radius: 2px;
+      border: 1px solid var(--border);
     }
-    
-    .select-container {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    
+
+    /* Select */
     .select {
-      flex: 1;
-      padding: 0.5rem 1rem;
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 8px;
-      background: rgba(139, 92, 246, 0.1);
-      color: #c084fc;
-      font-family: inherit;
-      font-size: 0.9rem;
+      height: 22px;
+      padding: 0 6px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: #3c3c3c;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
       outline: none;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
-    
-    .select:hover {
-      border-color: rgba(139, 92, 246, 0.5);
-      background: rgba(139, 92, 246, 0.15);
-    }
-    
     .select:focus {
-      border-color: #8b5cf6;
-      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+      border-color: var(--accent);
     }
-    
     .select option {
-      background: #1a1a2e;
-      color: #e8e8f0;
+      background: #1e1e1e;
+      color: var(--text);
     }
-    
-    .video-section {
+
+    /* ── Content area ─────────────────────── */
+    .content-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── Video panel ──────────────────────── */
+    .video-panel {
+      width: 340px;
+      min-width: 340px;
+      flex-shrink: 0;
+      background: #252526;
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+    }
+    .video-inner {
+      flex: 1;
+      display: flex;
       align-items: center;
-      gap: 1.5rem;
+      justify-content: center;
+      padding: 16px;
+      background: #1a1a1a;
     }
-    
-    .video-title {
-      font-size: 1.25rem;
-      font-weight: 500;
-      color: #c084fc;
-      text-align: center;
-    }
-    
     #grayscaleCanvas {
-      border: 2px solid rgba(139, 92, 246, 0.3);
-      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
       image-rendering: pixelated;
-      box-shadow: 0 8px 40px rgba(139, 92, 246, 0.2);
-      background: rgba(0, 0, 0, 0.3);
+      background: #000;
+      display: block;
+      width: 300px;
+      height: 300px;
     }
-    
+
+    /* ── Waveform panel ───────────────────── */
+    .waveform-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .waveform-inner {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 24px;
+    }
+    #waveformCanvas {
+      display: block;
+      width: 100%;
+      max-width: 800px;
+      height: 160px;
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+    }
+
+    /* ── Status bar ───────────────────────── */
+    .statusbar {
+      height: 22px;
+      min-height: 22px;
+      flex-shrink: 0;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 14px;
+    }
+    .status-item {
+      font-size: 11px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-item span {
+      color: #fff;
+      font-weight: 600;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      flex-shrink: 0;
+    }
+    .status-dot.active {
+      background: #4ec9b0;
+    }
+
+    /* hidden elements */
     video, #canvas {
       display: none;
     }
-    
-    /* Animated background elements */
-    .bg-decoration {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: -1;
-      overflow: hidden;
-    }
-    
-    .bg-decoration::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-      animation: rotate 30s linear infinite;
-    }
-    
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    /* Responsive design */
-    @media (max-width: 768px) {
-      body {
-        padding: 1rem;
-      }
-      
-      h1 {
-        font-size: 2rem;
-        margin-bottom: 2rem;
-      }
-      
-      .main-controls {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-      }
-      
-      .btn {
-        width: 200px;
-      }
-      
-      .controls-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-      
-      #grayscaleCanvas {
-        max-width: 100%;
-        height: auto;
-      }
+
+    /* scrollbar global */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 5px; }
+
+    @media (max-width: 700px) {
+      .content-area { flex-direction: column; }
+      .video-panel { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
+      .controls-row { flex-wrap: wrap; }
+      .control-block { border-right: none; border-bottom: 1px solid var(--border); width: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="bg-decoration"></div>
-  
-  <div class="container">
-    <h1>Camera Audio Synth</h1>
-    
-    <div class="main-controls">
-      <button id="start" class="btn btn-primary">Start</button>
-      <button id="stop" class="btn btn-secondary">Stop</button>
-    </div>
 
-    <div class="controls-grid">
-      <div class="control-group">
-        <label class="control-label">Volume</label>
-        <div class="slider-container">
-          <input type="range" id="volumeControl" class="slider" min="0" max="1" step="0.01" value="0.005">
-          <span id="volumeValue" class="value-display">0.005</span>
-        </div>
-      </div>
-      
-      <div class="control-group">
-        <label class="control-label">Grid Size</label>
-        <div class="select-container">
-          <select id="sizeSelect" class="select">
-            <option value="4">4×4 (16 pixels)</option>
-            <option value="8" selected>8×8 (64 pixels)</option>
-            <option value="16">16×16 (256 pixels)</option>
-            <option value="32">32×32 (1024 pixels)</option>
-          </select>
-          <span id="pixelCount" class="value-display">64</span>
-        </div>
-      </div>
-    </div>
-
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" width="100" height="100"></canvas>
-    <div class="control-group">
-        <label class="control-label">Output Waveform</label>
-        <canvas id="waveformCanvas" width="600" height="100" style="background:#111; border-radius:8px; box-shadow:0 0 10px rgba(139,92,246,0.3);"></canvas>
-      </div>
-      
-    
-    <div class="video-section">
-      <h3 id="videoTitle" class="video-title">Grayscale Video Feed (8×8)</h3>
-      <canvas id="grayscaleCanvas" width="320" height="320"></canvas>
-    </div>
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <span>camera-audio-synth.js — Camera Audio Synth</span>
   </div>
+
+  <div class="workspace">
+
+    <!-- Controls toolbar -->
+    <div class="panel-header">
+      <span class="panel-title">Controls</span>
+    </div>
+    <div class="controls-row">
+      <div class="control-block">
+        <button id="start" class="btn btn-primary">▶ Start</button>
+        <button id="stop" class="btn btn-secondary">■ Stop</button>
+      </div>
+      <div class="control-block">
+        <label class="control-label">Volume</label>
+        <input type="range" id="volumeControl" class="slider" min="0" max="1" step="0.01" value="0.005">
+        <span id="volumeValue" class="value-display">0.005</span>
+      </div>
+      <div class="control-block">
+        <label class="control-label">Grid Size</label>
+        <select id="sizeSelect" class="select">
+          <option value="4">4×4 (16px)</option>
+          <option value="8" selected>8×8 (64px)</option>
+          <option value="16">16×16 (256px)</option>
+          <option value="32">32×32 (1024px)</option>
+        </select>
+        <span id="pixelCount" class="value-display">64 px</span>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="content-area">
+
+      <!-- Video feed panel -->
+      <div class="video-panel">
+        <div class="panel-header">
+          <span class="panel-title-muted" id="videoTitle">OUTPUT — 8×8</span>
+        </div>
+        <div class="video-inner">
+          <canvas id="grayscaleCanvas" width="320" height="320"></canvas>
+        </div>
+      </div>
+
+      <!-- Waveform panel -->
+      <div class="waveform-panel">
+        <div class="panel-header">
+          <span class="panel-title-muted">WAVEFORM</span>
+        </div>
+        <div class="waveform-inner">
+          <canvas id="waveformCanvas" width="800" height="160"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <div class="status-item">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Stopped</span>
+      </div>
+      <div class="status-item" id="status-item-freq-range">Freq: <span>Error</span></div>
+      <div class="status-item" id="status-item-freq-distribution">Mode: <span>Logarithmic</span></div>
+      <div class="status-item">Curve: <span>Hilbert</span></div>
+    </div>
+
+  </div>
+
+  <!-- Hidden elements -->
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" width="100" height="100"></canvas>
 
   <script>
     let size = 8;
@@ -346,13 +432,19 @@
     let animationId;
     let volumeMultiplier = 0.005;
     let frequencyDistribution = 'logarithmic';
+    const minFreq = 50;
+    const maxFreq = 5000;
     let currentFrequencies = [];
     let isRunning = false;
-
-    // Precomputed Hilbert curve coordinates
     let hilbertCoords = [];
 
-    // Hilbert curve functions - maps 2D coordinates to 1D space-filling curve
+    function updateUIforSettings(){
+      document.getElementById("status-item-freq-range").innerHTML =  `Freq: <span>${minFreq}-${maxFreq} Hz</span>`;
+
+      document.getElementById("status-item-freq-distribution").innerHTML =  `Mode: <span>${{"logarithmic": "Logarithmic"}[frequencyDistribution]}</span>`;
+    }
+    updateUIforSettings();
+
     function hilbert(n, index) {
       let x = 0, y = 0;
       for (let s = 1, t = index; s < n; s *= 2) {
@@ -368,390 +460,234 @@
 
     function rot(n, x, y, rx, ry) {
       if (ry === 0) {
-        if (rx === 1) {
-          x = n - 1 - x;
-          y = n - 1 - y;
-        }
+        if (rx === 1) { x = n - 1 - x; y = n - 1 - y; }
         [x, y] = [y, x];
       }
       return [x, y];
     }
 
-    // Precompute Hilbert curve coordinates for current grid size
     function precomputeHilbertCurve(gridSize) {
-      console.log(`Precomputing Hilbert curve for ${gridSize}×${gridSize} grid...`);
       hilbertCoords = new Array(gridSize * gridSize);
-      
       for (let i = 0; i < gridSize * gridSize; i++) {
         hilbertCoords[i] = hilbert(gridSize, i);
       }
-      
-      console.log(`Hilbert curve precomputed: ${hilbertCoords.length} coordinates`);
     }
 
-    // Generate frequency distributions for oscillators
     function generateFrequencies(distribution, numOsc) {
-      const minFreq = 50;
-      const maxFreq = 5000;
-      const frequencies = new Array(numOsc);
       
+      const frequencies = new Array(numOsc);
       switch(distribution) {
         case 'linear':
-          for (let i = 0; i < numOsc; i++) {
+          for (let i = 0; i < numOsc; i++)
             frequencies[i] = minFreq + (i / (numOsc - 1)) * (maxFreq - minFreq);
-          }
           break;
-          
         case 'logarithmic':
-          const logMin = Math.log(minFreq);
-          const logMax = Math.log(maxFreq);
+        default:
+          const logMin = Math.log(minFreq), logMax = Math.log(maxFreq);
           for (let i = 0; i < numOsc; i++) {
             const logValue = logMin + (i / (numOsc - 1)) * (logMax - logMin);
             frequencies[i] = Math.exp(logValue);
           }
           break;
-          
-        case 'harmonic':
-          const fundamental = 50;
-          for (let i = 0; i < numOsc; i++) {
-            frequencies[i] = fundamental * (i + 1);
-            if (frequencies[i] > maxFreq) {
-              const remaining = numOsc - i;
-              const startFreq = frequencies[i - 1];
-              const logStart = Math.log(startFreq);
-              const logEnd = Math.log(maxFreq);
-              
-              for (let j = 0; j < remaining; j++) {
-                const logValue = logStart + (j / (remaining - 1)) * (logEnd - logStart);
-                frequencies[i + j] = Math.exp(logValue);
-              }
-              break;
-            }
-          }
-          break;
       }
-      
       return frequencies;
     }
 
-    // Update canvas size and related variables
     function updateSize(newSize) {
       size = parseInt(newSize);
       numPixels = size * size;
       numOscillators = size * size;
-      
-      // Update canvas dimensions
       canvas.width = size;
       canvas.height = size;
-      
-      // Precompute Hilbert curve for new size
       precomputeHilbertCurve(size);
-      
-      // Update display
-      document.getElementById('pixelCount').textContent = numPixels;
-      document.getElementById('videoTitle').textContent = `Grayscale Video Feed (${size}×${size})`;
-      
-      // If audio is running, update the worklet with new configuration
+      document.getElementById('pixelCount').textContent = numPixels + ' px';
+      document.getElementById('videoTitle').textContent = `OUTPUT — ${size}×${size}`;
       if (workletNode && isRunning) {
         const frequencies = generateFrequencies(frequencyDistribution, numOscillators);
         currentFrequencies = frequencies;
-        workletNode.port.postMessage({ 
-          type: 'updateConfig', 
-          numOscillators: numOscillators,
-          frequencies: frequencies 
-        });
+        workletNode.port.postMessage({ type: 'updateConfig', numOscillators, frequencies });
       }
     }
 
-    // Control event handlers
     document.getElementById('volumeControl').oninput = function() {
       volumeMultiplier = parseFloat(this.value);
       document.getElementById('volumeValue').textContent = this.value;
     };
+    document.getElementById('sizeSelect').onchange = function() { updateSize(this.value); };
 
-    document.getElementById('sizeSelect').onchange = function() {
-      updateSize(this.value);
-    };
-
-    // Setup audio context and worklet processor
     async function setupAudio() {
       audioContext = new AudioContext();
-      
       const frequencies = generateFrequencies(frequencyDistribution, numOscillators);
       currentFrequencies = frequencies;
-      
-      // Audio worklet processor code
+
       const workletCode = `
         class WideRangeSynthProcessor extends AudioWorkletProcessor {
           constructor() {
             super();
-            
             this.numOscillators = 64;
-            
-            // Initialize with logarithmic frequency distribution
             this.frequencies = new Array(this.numOscillators).fill(0).map((_, i) => {
-              const minFreq = 50;
-              const maxFreq = 10000;
-              const logMin = Math.log(minFreq);
-              const logMax = Math.log(maxFreq);
-              const logValue = logMin + (i / (this.numOscillators - 1)) * (logMax - logMin);
-              return Math.exp(logValue);
+              const logMin = Math.log(50), logMax = Math.log(10000);
+              return Math.exp(logMin + (i / (this.numOscillators - 1)) * (logMax - logMin));
             });
-            
             this.targetAmplitudes = new Float32Array(this.numOscillators).fill(0);
             this.currentAmplitudes = new Float32Array(this.numOscillators).fill(0);
             this.phases = new Float32Array(this.numOscillators);
-            
-            // Random phase initialization to prevent interference
-            for (let i = 0; i < this.numOscillators; i++) {
-              this.phases[i] = Math.random() * 2 * Math.PI;
-            }
-            
+            for (let i = 0; i < this.numOscillators; i++) this.phases[i] = Math.random() * 2 * Math.PI;
             this.phaseSteps = this.frequencies.map(f => 2 * Math.PI * f / sampleRate);
             this.masterGain = 0;
-            this.targetMasterGain = 0;
-            
-            // Handle messages from main thread
             this.port.onmessage = (event) => {
               if (event.data.type === 'amplitudes') {
                 const pixelData = event.data.values;
-                
                 if (pixelData.length === this.numOscillators) {
-                  // Direct mapping when pixel count matches oscillator count
                   for (let i = 0; i < this.numOscillators; i++) {
                     this.targetAmplitudes[i] = pixelData[i];
                     this.currentAmplitudes[i] = this.targetAmplitudes[i];
                   }
                 } else {
-                  // Group pixels when there are more pixels than oscillators
                   const groupSize = Math.max(1, Math.floor(pixelData.length / this.numOscillators));
-                  
                   for (let i = 0; i < this.numOscillators; i++) {
                     let sum = 0;
                     const startIdx = i * groupSize;
                     const endIdx = Math.min(startIdx + groupSize, pixelData.length);
-                    
-                    for (let j = startIdx; j < endIdx; j++) {
-                      sum += pixelData[j];
-                    }
-                    
+                    for (let j = startIdx; j < endIdx; j++) sum += pixelData[j];
                     this.targetAmplitudes[i] = sum / (endIdx - startIdx);
                     this.currentAmplitudes[i] = this.targetAmplitudes[i];
                   }
                 }
-                
-                // Calculate master gain from total energy
                 const totalEnergy = this.targetAmplitudes.reduce((a, b) => a + b * b, 0);
-                this.targetMasterGain = Math.sqrt(totalEnergy) * 0.08;
-                this.masterGain = this.targetMasterGain;
-                
-              } else if (event.data.type === 'frequencies') {
-                this.frequencies = [...event.data.values];
-                this.phaseSteps = this.frequencies.map(f => 2 * Math.PI * f / sampleRate);
-                
-                // Reset phases to prevent discontinuities
-                for (let i = 0; i < this.numOscillators; i++) {
-                  this.phases[i] = Math.random() * 2 * Math.PI;
-                }
+                this.masterGain = Math.sqrt(totalEnergy) * 0.08;
               } else if (event.data.type === 'updateConfig') {
-                // Update oscillator count and frequencies
                 this.numOscillators = event.data.numOscillators;
                 this.frequencies = [...event.data.frequencies];
                 this.phaseSteps = this.frequencies.map(f => 2 * Math.PI * f / sampleRate);
-                
-                // Resize arrays
                 this.targetAmplitudes = new Float32Array(this.numOscillators).fill(0);
                 this.currentAmplitudes = new Float32Array(this.numOscillators).fill(0);
                 this.phases = new Float32Array(this.numOscillators);
-                
-                // Random phase initialization
-                for (let i = 0; i < this.numOscillators; i++) {
-                  this.phases[i] = Math.random() * 2 * Math.PI;
-                }
+                for (let i = 0; i < this.numOscillators; i++) this.phases[i] = Math.random() * 2 * Math.PI;
               }
             };
           }
-          
           process(_, outputs) {
             const output = outputs[0][0];
-            
-            // Generate audio samples
             for (let i = 0; i < output.length; i++) {
               let sample = 0;
-              
-              // Generate and mix all oscillators
               for (let j = 0; j < this.numOscillators; j++) {
-                // Advance phase
                 this.phases[j] += this.phaseSteps[j];
-                if (this.phases[j] > 6.28318530718) {
-                  this.phases[j] -= 6.28318530718;
-                }
-                
-                // Add to output if amplitude is significant
-                if (this.currentAmplitudes[j] > 0.001) {
-                  sample += this.currentAmplitudes[j] * Math.sin(this.phases[j]);
-                }
+                if (this.phases[j] > 6.28318530718) this.phases[j] -= 6.28318530718;
+                if (this.currentAmplitudes[j] > 0.001) sample += this.currentAmplitudes[j] * Math.sin(this.phases[j]);
               }
-              
-              // Apply master gain with soft limiting
               sample *= this.masterGain;
-              
-              // Gentle soft limiting to prevent clipping
-              if (sample > 0.7) {
-                sample = 0.7 + (sample - 0.7) * 0.05;
-              } else if (sample < -0.7) {
-                sample = -0.7 + (sample + 0.7) * 0.05;
-              }
-              
+              if (sample > 0.7) sample = 0.7 + (sample - 0.7) * 0.05;
+              else if (sample < -0.7) sample = -0.7 + (sample + 0.7) * 0.05;
               output[i] = sample;
             }
-            
             return true;
           }
         }
         registerProcessor('wide-range-synth', WideRangeSynthProcessor);
       `;
-      
+
       await audioContext.audioWorklet.addModule('data:application/javascript;base64,' + btoa(workletCode));
-      
       workletNode = new AudioWorkletNode(audioContext, 'wide-range-synth');
       workletNode.connect(audioContext.destination);
-      
-      // Send initial configuration to worklet
-      workletNode.port.postMessage({ 
-        type: 'updateConfig', 
-        numOscillators: numOscillators,
-        frequencies: frequencies 
-      });
+      workletNode.port.postMessage({ type: 'updateConfig', numOscillators, frequencies });
     }
-    let analyserNode, waveformCanvas, waveformCtx;
-function setupWaveformVisualizer() {
-  analyserNode = audioContext.createAnalyser();
-  analyserNode.fftSize = 1024;
 
-  waveformCanvas = document.getElementById('waveformCanvas');
-  waveformCtx = waveformCanvas.getContext('2d');
+    let analyserNode;
+    function setupWaveformVisualizer() {
+      analyserNode = audioContext.createAnalyser();
+      analyserNode.fftSize = 1024;
+      workletNode.connect(analyserNode);
 
-  workletNode.connect(analyserNode);
+      const waveformCanvas = document.getElementById('waveformCanvas');
+      const waveformCtx = waveformCanvas.getContext('2d');
 
-  function drawWaveform() {
-    requestAnimationFrame(drawWaveform);
+      function drawWaveform() {
+        requestAnimationFrame(drawWaveform);
+        const bufferLength = analyserNode.fftSize;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserNode.getByteTimeDomainData(dataArray);
 
-    const bufferLength = analyserNode.fftSize;
-    const dataArray = new Uint8Array(bufferLength);
-    analyserNode.getByteTimeDomainData(dataArray);
+        waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
 
-    waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+        // grid lines
+        waveformCtx.strokeStyle = '#2a2a2a';
+        waveformCtx.lineWidth = 1;
+        waveformCtx.beginPath();
+        waveformCtx.moveTo(0, waveformCanvas.height / 2);
+        waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+        waveformCtx.stroke();
 
-    waveformCtx.lineWidth = 2;
-    waveformCtx.strokeStyle = '#c084fc';
-    waveformCtx.beginPath();
-
-    const sliceWidth = waveformCanvas.width / bufferLength;
-    let x = 0;
-
-    for (let i = 0; i < bufferLength; i++) {
-      const v = dataArray[i] / 128.0; // Normalize to 0-2
-      const y = (v - 1.0) * waveformCanvas.height / 2 + waveformCanvas.height / 2;
-
-      if (i === 0) {
-        waveformCtx.moveTo(x, y);
-      } else {
-        waveformCtx.lineTo(x, y);
+        waveformCtx.strokeStyle = '#4ec9b0';
+        waveformCtx.lineWidth = 1.5;
+        waveformCtx.beginPath();
+        const sliceWidth = waveformCanvas.width / bufferLength;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v - 1.0) * waveformCanvas.height / 2 + waveformCanvas.height / 2;
+          i === 0 ? waveformCtx.moveTo(x, y) : waveformCtx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        waveformCtx.stroke();
       }
-
-      x += sliceWidth;
+      drawWaveform();
     }
 
-    waveformCtx.stroke();
-  }
-
-  drawWaveform();
-}
-
-    // Main processing loop - converts video to audio
     function processFrameAndSend() {
-      // Draw video frame to small canvas
       ctx.drawImage(video, 0, 0, size, size);
       let imageData = ctx.getImageData(0, 0, size, size).data;
-
       const amplitudes = new Float32Array(numPixels);
-      
-      // Create grayscale version for display
       const grayscaleImageData = grayscaleCtx.createImageData(size, size);
-      
-      // Convert pixels to amplitude values using precomputed Hilbert curve mapping
+
       for (let i = 0; i < numPixels; i++) {
-        const [x, y] = hilbertCoords[i]; // Use precomputed coordinates
+        const [x, y] = hilbertCoords[i];
         const index = (y * size + x) * 4;
-        const r = imageData[index];
-        const g = imageData[index + 1];
-        const b = imageData[index + 2];
-        
-        // Convert to grayscale
+        const r = imageData[index], g = imageData[index + 1], b = imageData[index + 2];
         const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        
-        // Apply gamma correction and volume scaling for audio
         const normalizedGray = Math.pow(gray / 255, 1.5);
         amplitudes[i] = normalizedGray * volumeMultiplier;
-        
-        // Set grayscale pixel for display
         const displayIndex = (y * size + x) * 4;
-        grayscaleImageData.data[displayIndex] = gray;     // R
-        grayscaleImageData.data[displayIndex + 1] = gray; // G
-        grayscaleImageData.data[displayIndex + 2] = gray; // B
-        grayscaleImageData.data[displayIndex + 3] = 255;  // A
+        grayscaleImageData.data[displayIndex] = gray;
+        grayscaleImageData.data[displayIndex + 1] = gray;
+        grayscaleImageData.data[displayIndex + 2] = gray;
+        grayscaleImageData.data[displayIndex + 3] = 255;
       }
 
-      // Draw grayscale version to display canvas (scaled up)
       grayscaleCtx.putImageData(grayscaleImageData, 0, 0);
       grayscaleCtx.imageSmoothingEnabled = false;
       grayscaleCtx.drawImage(grayscaleCanvas, 0, 0, size, size, 0, 0, 320, 320);
 
-      // Send amplitude data to audio worklet
-      if (workletNode) {
-        workletNode.port.postMessage({ type: 'amplitudes', values: amplitudes });
-      }
-
+      if (workletNode) workletNode.port.postMessage({ type: 'amplitudes', values: amplitudes });
       animationId = requestAnimationFrame(processFrameAndSend);
     }
 
-    // Start the application
     async function start() {
       try {
         await setupAudio();
         setupWaveformVisualizer();
-        const stream = await navigator.mediaDevices.getUserMedia({ video: {facingMode: "environment"},  }); // use enviroment camera
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
         isRunning = true;
-
-        video.onloadedmetadata = () => {
-          video.play();
-          processFrameAndSend();
-        };
+        document.getElementById('statusDot').classList.add('active');
+        document.getElementById('statusText').textContent = 'Running';
+        video.onloadedmetadata = () => { video.play(); processFrameAndSend(); };
       } catch (error) {
         console.error('Error starting:', error);
         alert('Error starting: ' + error.message);
       }
     }
 
-    // Stop the application
     function stop() {
       isRunning = false;
-      if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-      }
-      if (video.srcObject) {
-        video.srcObject.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-      }
+      if (audioContext) { audioContext.close(); audioContext = null; }
+      if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
       cancelAnimationFrame(animationId);
+      document.getElementById('statusDot').classList.remove('active');
+      document.getElementById('statusText').textContent = 'Stopped';
     }
 
-    // Initialize with default grid size
     precomputeHilbertCurve(size);
-
     document.getElementById('start').onclick = start;
     document.getElementById('stop').onclick = stop;
   </script>
