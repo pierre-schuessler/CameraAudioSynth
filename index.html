@@ -415,19 +415,6 @@
       </div>
 
     </div>
-
-    <!-- Status bar 
-    <div class="statusbar">
-      <div class="status-item">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Stopped</span>
-      </div>
-      <div class="status-item" id="status-item-freq-range">Freq: <span>—</span></div>
-      <div class="status-item" id="status-item-freq-distribution">Mode: <span>Logarithmic</span></div>
-      <div class="status-item">Curve: <span>Hilbert</span></div>
-    </div>
-    -->
-
   </div>
 
   <!-- Hidden elements -->
@@ -733,8 +720,6 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
         isRunning = true;
-        document.getElementById('statusDot').classList.add('active');
-        document.getElementById('statusText').textContent = 'Running';
         updateUIforSettings();
         video.onloadedmetadata = () => { video.play(); processFrameAndSend(); };
       } catch (error) {
@@ -748,8 +733,6 @@
       if (audioContext) { audioContext.close(); audioContext = null; }
       if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
       cancelAnimationFrame(animationId);
-      document.getElementById('statusDot').classList.remove('active');
-      document.getElementById('statusText').textContent = 'Stopped';
     }
 
     precomputeHilbertCurve(size);
