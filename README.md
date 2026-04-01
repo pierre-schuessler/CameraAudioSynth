@@ -15,8 +15,10 @@ Audio processing runs entirely in an **AudioWorklet** on a dedicated thread, kee
 | Control | Description |
 |---|---|
 | **Start / Stop** | Opens the camera and begins audio synthesis |
-| **Volume** | Master amplitude multiplier (default is intentionally low — start here) |
+| **Volume** | Master amplitude multiplier |
 | **Grid Size** | Resolution of the pixel grid: 4×4 (16 oscillators) up to 32×32 (1024 oscillators) |
+| **Frequency range** | Range of frequencies (minimal to maximal) |
+| **Frequency distribution** | Distribution of the frequencies (linear, logarithmic, ...) |
 
 A live **waveform display** shows the synthesized audio output, and a scaled-up **grayscale preview** shows the pixel grid being fed to the synth.
 
