@@ -1,7 +1,12 @@
+// --- State Variables ---
 let size = 8;
 let numPixels = size * size;
 
-let audioContext, synthOsc, masterVolume, analyserNode;
+// We now have TWO oscillators for ping-pong crossfading
+let audioContext, synthOscA, synthOscB, gainA, gainB, masterVolume, analyserNode;
+let activeOsc = 'A';
+let lastAudioUpdate = 0;
+
 let video = document.getElementById('video');
 let canvas = document.getElementById('canvas');
 let ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -9,10 +14,17 @@ let grayscaleCanvas = document.getElementById('grayscaleCanvas');
 let grayscaleCtx = grayscaleCanvas.getContext('2d');
 
 let animationId;
-let volumeMultiplier = 0.005; // Kept your original default
-let minFreq = 50; // We use this as the fundamental pitch
+let volumeMultiplier = 0.005; 
+let minFreq = 50; 
 let isRunning = false;
 let hilbertCoords = [];
+
+// Pre-allocate memory to prevent Garbage Collection audio stutters
+let realAmplitudes = new Float32Array(0);
+let imagPhases = new Float32Array(0);
+let grayscaleImageData = null;
+let visualizerDataArray = new Float32Array(0);
+
 
 // --- Hilbert Curve Math ---
 function hilbert(n, index) {
@@ -43,13 +55,18 @@ function precomputeHilbertCurve(gridSize) {
   }
 }
 
-// --- UI Listeners (Safely mapped to your existing HTML) ---
+// --- UI Listeners ---
 function updateSize(newSize) {
   size = parseInt(newSize);
   numPixels = size * size;
   canvas.width = size;
   canvas.height = size;
   precomputeHilbertCurve(size);
+  
+  // Resize our pre-allocated memory blocks
+  realAmplitudes = new Float32Array(numPixels + 1);
+  imagPhases = new Float32Array(numPixels + 1);
+  grayscaleImageData = grayscaleCtx.createImageData(size, size);
   
   const pixelCountEl = document.getElementById('pixelCount');
   if (pixelCountEl) pixelCountEl.textContent = numPixels + ' px';
@@ -66,20 +83,18 @@ document.getElementById('volumeControl').oninput = function () {
   if (volValEl) volValEl.textContent = this.value;
 };
 
-// We repurpose your Min Freq input to be the Fundamental Base Pitch
 document.getElementById('minFreqInput').onchange = function () {
   let newMin = parseInt(this.value) || 20;
   newMin = Math.max(20, Math.min(newMin, 19999));
   this.value = newMin;
   minFreq = newMin;
-  if (synthOsc) {
-    // Glide the pitch smoothly if changed while running
-    synthOsc.frequency.setTargetAtTime(minFreq, audioContext.currentTime, 0.1);
+  if (synthOscA && synthOscB) {
+    // Glide both oscillators safely
+    synthOscA.frequency.setTargetAtTime(minFreq, audioContext.currentTime, 0.1);
+    synthOscB.frequency.setTargetAtTime(minFreq, audioContext.currentTime, 0.1);
   }
 };
 
-// Max Freq and Distribution are ignored by iFFT (harmonics must be mathematically linear).
-// We stub them out so your existing HTML doesn't throw null reference errors.
 const maxFreqEl = document.getElementById('maxFreqInput');
 if (maxFreqEl) maxFreqEl.onchange = () => console.log("Max Freq ignored in iFFT mode.");
 
@@ -87,27 +102,42 @@ const distSelectEl = document.getElementById('distributionSelect');
 if (distSelectEl) distSelectEl.onchange = () => console.log("Distribution ignored in iFFT mode.");
 
 
-// --- Audio Engine ---
+// --- Audio Engine (Ping-Pong Setup) ---
 async function setupAudio() {
   audioContext = new AudioContext();
   
   masterVolume = audioContext.createGain();
   masterVolume.gain.value = 1.0;
   
-  // Replace worklet with native Oscillator mapped to our dynamic waveform
-  synthOsc = audioContext.createOscillator();
-  synthOsc.frequency.value = minFreq; 
+  // Create Dual Gains for crossfading
+  gainA = audioContext.createGain();
+  gainB = audioContext.createGain();
+  gainA.gain.value = 1.0; // A starts ON
+  gainB.gain.value = 0.0; // B starts OFF
   
-  synthOsc.connect(masterVolume);
+  // Create Dual Oscillators
+  synthOscA = audioContext.createOscillator();
+  synthOscB = audioContext.createOscillator();
+  synthOscA.frequency.value = minFreq; 
+  synthOscB.frequency.value = minFreq; 
+  
+  synthOscA.connect(gainA);
+  synthOscB.connect(gainB);
+  gainA.connect(masterVolume);
+  gainB.connect(masterVolume);
   masterVolume.connect(audioContext.destination);
   
-  synthOsc.start();
+  synthOscA.start();
+  synthOscB.start();
 }
 
 function setupWaveformVisualizer() {
   analyserNode = audioContext.createAnalyser();
   analyserNode.fftSize = 1024;
   masterVolume.connect(analyserNode);
+  
+  // Pre-allocate visualizer array
+  visualizerDataArray = new Float32Array(analyserNode.fftSize);
 
   const waveformCanvas = document.getElementById('waveformCanvas');
   if (!waveformCanvas) return;
@@ -117,10 +147,7 @@ function setupWaveformVisualizer() {
     if (!isRunning) return;
     requestAnimationFrame(drawWaveform);
     
-    const bufferLength = analyserNode.fftSize;
-    const dataArray = new Float32Array(bufferLength);
-    // Switched to Float for better high-res rendering
-    analyserNode.getFloatTimeDomainData(dataArray); 
+    analyserNode.getFloatTimeDomainData(visualizerDataArray); 
 
     waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
 
@@ -135,12 +162,11 @@ function setupWaveformVisualizer() {
     waveformCtx.lineWidth = 1.5;
     waveformCtx.beginPath();
     
-    const sliceWidth = waveformCanvas.width / bufferLength;
+    const sliceWidth = waveformCanvas.width / analyserNode.fftSize;
     let x = 0;
     
-    for (let i = 0; i < bufferLength; i++) {
-      // Scale visual up because your volumeMultiplier (0.005) produces small raw waves
-      const v = dataArray[i] * 50.0; 
+    for (let i = 0; i < analyserNode.fftSize; i++) {
+      const v = visualizerDataArray[i] * 50.0; 
       const y = (v * -0.5 * waveformCanvas.height) + (waveformCanvas.height / 2);
       i === 0 ? waveformCtx.moveTo(x, y) : waveformCtx.lineTo(x, y);
       x += sliceWidth;
@@ -151,17 +177,14 @@ function setupWaveformVisualizer() {
 }
 
 // --- Core Processing Loop ---
-function processFrameAndSend() {
+function processFrameAndSend(timestamp) {
   if (!isRunning) return;
 
+  // 1. VISUALS: Run at maximum frame rate
   ctx.drawImage(video, 0, 0, size, size);
   let imageData = ctx.getImageData(0, 0, size, size).data;
-  const grayscaleImageData = grayscaleCtx.createImageData(size, size);
 
-  // PeriodicWave arrays: index 0 is DC offset (silence), indices 1 to N are harmonics
-  const realAmplitudes = new Float32Array(numPixels + 1);
-  const imagPhases = new Float32Array(numPixels + 1); // 0 ensures perfectly aligned phases
-
+  // We reuse our pre-allocated realAmplitudes and grayscaleImageData
   for (let i = 0; i < numPixels; i++) {
     const [x, y] = hilbertCoords[i];
     const index = (y * size + x) * 4;
@@ -170,7 +193,6 @@ function processFrameAndSend() {
     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
     const normalizedGray = Math.pow(gray / 255, 1.5) * volumeMultiplier;
     
-    // MATHEMATICAL CONVERGENCE: Apply 1/n decay to higher frequencies
     const harmonicNumber = i + 1;
     realAmplitudes[harmonicNumber] = normalizedGray * (1 / harmonicNumber);
 
@@ -185,10 +207,28 @@ function processFrameAndSend() {
   grayscaleCtx.imageSmoothingEnabled = false;
   grayscaleCtx.drawImage(grayscaleCanvas, 0, 0, size, size, 0, 0, 320, 320);
 
-  // Instantly compile 4000+ sine waves using C++ iFFT and apply to oscillator
-  if (synthOsc && audioContext.state === 'running') {
+  // 2. AUDIO: Throttle to ~20fps (50ms) to allow crossfading to complete seamlessly
+  if (synthOscA && audioContext.state === 'running' && (timestamp - lastAudioUpdate > 50)) {
+    lastAudioUpdate = timestamp;
+    
     const wave = audioContext.createPeriodicWave(realAmplitudes, imagPhases, { disableNormalization: true });
-    synthOsc.setPeriodicWave(wave);
+    const now = audioContext.currentTime;
+    
+    // 15ms timeConstant creates a smooth ~45ms crossfade
+    const fadeSpeed = 0.015; 
+
+    // Ping-Pong the waveforms
+    if (activeOsc === 'A') {
+      synthOscB.setPeriodicWave(wave);
+      gainB.gain.setTargetAtTime(1.0, now, fadeSpeed); // Fade B in
+      gainA.gain.setTargetAtTime(0.0, now, fadeSpeed); // Fade A out
+      activeOsc = 'B';
+    } else {
+      synthOscA.setPeriodicWave(wave);
+      gainA.gain.setTargetAtTime(1.0, now, fadeSpeed); // Fade A in
+      gainB.gain.setTargetAtTime(0.0, now, fadeSpeed); // Fade B out
+      activeOsc = 'A';
+    }
   }
 
   animationId = requestAnimationFrame(processFrameAndSend);
@@ -198,7 +238,9 @@ function processFrameAndSend() {
 async function start_stop() {
   if (isRunning) {
     isRunning = false;
-    if (synthOsc) { synthOsc.stop(); synthOsc.disconnect(); synthOsc = null; }
+    // Safely tear down both oscillators
+    if (synthOscA) { synthOscA.stop(); synthOscA.disconnect(); synthOscA = null; }
+    if (synthOscB) { synthOscB.stop(); synthOscB.disconnect(); synthOscB = null; }
     if (audioContext) { audioContext.close(); audioContext = null; }
     if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
     cancelAnimationFrame(animationId);
@@ -207,7 +249,6 @@ async function start_stop() {
   }
 
   try {
-    // clampFreqInputs() is removed; we just use minFreq directly
     await setupAudio();
     setupWaveformVisualizer();
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -215,7 +256,8 @@ async function start_stop() {
     isRunning = true;
     video.onloadedmetadata = () => { 
       video.play(); 
-      processFrameAndSend(); 
+      // Pass the initial timestamp so the throttle logic works immediately
+      processFrameAndSend(performance.now()); 
     };
     document.getElementById('start-stop').innerHTML = "■ Stop";
   } catch (error) {
@@ -224,5 +266,5 @@ async function start_stop() {
   }
 }
 
-precomputeHilbertCurve(size);
+updateSize(size); // Initialize memory immediately
 document.getElementById('start-stop').onclick = start_stop;
