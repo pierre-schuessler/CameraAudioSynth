@@ -70,6 +70,17 @@ let size = 8;
           }
           break;
         }
+        case 'perceptual': {
+          const hzToBark = f => 26.81 * f / (1960 + f) - 0.53;
+          const barkToHz = b => 1960 * (b + 0.53) / (26.28 - b);
+          const barkMin = hzToBark(minFreq);
+          const barkMax = hzToBark(maxFreq);
+          for (let i = 0; i < numOsc; i++) {
+            const b = barkMin + (i / (numOsc - 1)) * (barkMax - barkMin);
+            frequencies[i] = Math.max(minFreq, Math.min(maxFreq, barkToHz(b)));
+          }
+          break;
+        }
         case 'logarithmic':
         default: {
           const logMin = Math.log(minFreq), logMax = Math.log(maxFreq);
