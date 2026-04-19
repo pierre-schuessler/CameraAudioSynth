@@ -168,77 +168,54 @@ let size = 8;
             });
             this.targetAmplitudes = new Float32Array(this.numOscillators).fill(0);
             this.currentAmplitudes = new Float32Array(this.numOscillators).fill(0);
-            
-            // 1. ALIGN PHASES: Set all to 0 instead of random to allow mathematical convergence
-            this.phases = new Float32Array(this.numOscillators).fill(0);
-            
+            this.phases = new Float32Array(this.numOscillators);
+            for (let i = 0; i < this.numOscillators; i++) this.phases[i] = Math.random() * 2 * Math.PI;
             this.phaseSteps = this.frequencies.map(f => 2 * Math.PI * f / sampleRate);
             this.masterGain = 0;
-            
             this.port.onmessage = (event) => {
               if (event.data.type === 'amplitudes') {
                 const pixelData = event.data.values;
-                
-                for (let i = 0; i < this.numOscillators; i++) {
-                  let rawAmplitude = 0;
-                  
-                  if (pixelData.length === this.numOscillators) {
-                    rawAmplitude = pixelData[i];
-                  } else {
-                    const groupSize = Math.max(1, Math.floor(pixelData.length / this.numOscillators));
+                if (pixelData.length === this.numOscillators) {
+                  for (let i = 0; i < this.numOscillators; i++) {
+                    this.targetAmplitudes[i] = pixelData[i];
+                    this.currentAmplitudes[i] = this.targetAmplitudes[i];
+                  }
+                } else {
+                  const groupSize = Math.max(1, Math.floor(pixelData.length / this.numOscillators));
+                  for (let i = 0; i < this.numOscillators; i++) {
                     let sum = 0;
                     const startIdx = i * groupSize;
                     const endIdx = Math.min(startIdx + groupSize, pixelData.length);
                     for (let j = startIdx; j < endIdx; j++) sum += pixelData[j];
-                    rawAmplitude = sum / (endIdx - startIdx);
+                    this.targetAmplitudes[i] = sum / (endIdx - startIdx);
+                    this.currentAmplitudes[i] = this.targetAmplitudes[i];
                   }
-
-                  // 2. FOURIER CONVERGENCE: Apply 1/n mathematical decay. 
-                  // This prevents white noise explosion as resolution increases.
-                  const decayFactor = 1 / (i + 1);
-                  this.targetAmplitudes[i] = rawAmplitude * decayFactor;
-                  
-                  // NOTE: We intentionally DO NOT update this.currentAmplitudes[i] here 
-                  // so the process loop can smoothly glide to the target.
                 }
-                
                 const totalEnergy = this.targetAmplitudes.reduce((a, b) => a + b * b, 0);
                 this.masterGain = Math.sqrt(totalEnergy) * 0.08;
-                
               } else if (event.data.type === 'updateConfig') {
                 this.numOscillators = event.data.numOscillators;
                 this.frequencies = [...event.data.frequencies];
                 this.phaseSteps = this.frequencies.map(f => 2 * Math.PI * f / sampleRate);
                 this.targetAmplitudes = new Float32Array(this.numOscillators).fill(0);
                 this.currentAmplitudes = new Float32Array(this.numOscillators).fill(0);
-                this.phases = new Float32Array(this.numOscillators).fill(0); // Keep phases aligned
+                this.phases = new Float32Array(this.numOscillators);
+                for (let i = 0; i < this.numOscillators; i++) this.phases[i] = Math.random() * 2 * Math.PI;
               }
             };
           }
-          
           process(_, outputs) {
             const output = outputs[0][0];
             for (let i = 0; i < output.length; i++) {
               let sample = 0;
               for (let j = 0; j < this.numOscillators; j++) {
-                
-                // 3. AMPLITUDE SLEW: Smoothly glide current amplitude toward target (de-zippering)
-                this.currentAmplitudes[j] += (this.targetAmplitudes[j] - this.currentAmplitudes[j]) * 0.005;
-                
                 this.phases[j] += this.phaseSteps[j];
                 if (this.phases[j] > 6.28318530718) this.phases[j] -= 6.28318530718;
-                
-                if (this.currentAmplitudes[j] > 0.0001) {
-                  sample += this.currentAmplitudes[j] * Math.sin(this.phases[j]);
-                }
+                if (this.currentAmplitudes[j] > 0.001) sample += this.currentAmplitudes[j] * Math.sin(this.phases[j]);
               }
-              
               sample *= this.masterGain;
-              
-              // Soft clipping
               if (sample > 0.7) sample = 0.7 + (sample - 0.7) * 0.05;
               else if (sample < -0.7) sample = -0.7 + (sample + 0.7) * 0.05;
-              
               output[i] = sample;
             }
             return true;
